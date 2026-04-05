@@ -1,44 +1,68 @@
 # Integrate Azure OpenAI into your app
 
-### Overall Estimated Duration: 1 hour 30 minutes
+### Overall Estimated Duration: 5 hour 30 minutes
 
 ## Overview
 
-A brief overview of the lab
+In this lab, you will build and deploy a fully functional serverless AI agent powered by **LangChain.js** and the **Model Context Protocol (MCP)**. The agent is modeled as a burger ordering assistant called **Contoso Burgers**, where you will interact with a chat interface to browse the menu, place orders, and track their order history — all through natural language.
+
+By the end of this lab, you will have a fully operational AI agent running on Azure that demonstrates how the Model Context Protocol bridges the gap between large language models and real-world APIs.
 
 ## Objective
 
-objectives mentioned in concise details and what the outcome of this lab will be. how the lab will help learners to understand the concept
+This lab is designed to help you understand and apply the concepts of AI agent development, serverless architecture, and the Model Context Protocol (MCP) on Azure. By the end of this lab, you will be able to:
 
-for example:
-- **Use Azure OpenAI SDKs in your app:** This hands-on exercise demonstrates how to integrate Azure OpenAI SDKs into your application to improve AI capabilities. Participants will integrate and use Azure OpenAI SDKs within their application.
+- **Deploy a Production-Ready Serverless AI Architecture:**
+Run a multi-service solution on Azure using pre-configured infrastructure, bringing together APIs, storage, and web applications into a fully functional system.
+- **Enable an AI Agent to Reason and Act:**
+Configure an LLM-powered agent and observe how it interprets user intent and dynamically invokes backend tools through the Model Context Protocol (MCP).
+- **Explore and Extend Agent Capabilities:**
+Interact with the system, validate its behavior, and enhance it by introducing new tool functionality—experiencing how AI agents can be adapted to real-world scenarios.
 
 ## Pre-requisites
 
-The section will include only relevant pre-requisites for the lab. For example: development skills, ai concepts, content management for ai. each pre-requisite can be explained in a line or two to give learners an idea
+Before starting this lab, it is helpful to have:
+
+- **Basic Azure familiarity:** Comfort navigating the Azure Portal and understanding core concepts like resource groups and services at a high level.
+
+- **Foundational JavaScript/TypeScript knowledge:** Ability to recognize common constructs such as functions, objects, and imports when reviewing code snippets.
+
+- **Command-line basics:** Familiarity with running commands in a terminal (e.g., navigating directories and executing scripts).
+
+- **General awareness of AI concepts:** A high-level understanding of large language models (LLMs) and chat-based assistants.
+
+- **VS Code environment ready:** Access to Visual Studio Code with GitHub Copilot available for use.
 
 
 ## Architecture
 
-example - The architecture leverages certain services to achieve the desired outcome. The architecture diagram and explanation of components will be provided in this section.
+The solution follows a serverless, multi-service architecture where each component has a focused role. User interactions begin in the Agent Web App and are sent to the Agent API, which hosts the LangChain.js agent responsible for understanding intent and deciding next actions.
+
+Instead of directly calling backend services, the agent interacts with the Burger MCP Server using the Model Context Protocol (MCP). This layer exposes a set of tools that represent real capabilities, allowing the agent to remain decoupled from the underlying business logic.
+
+The MCP server forwards these tool calls to the Burger API, which processes requests and stores data in Azure Cosmos DB. Responses flow back through the same path to the user, enabling a seamless and dynamic chat experience.
+
+This layered design separates reasoning, execution, and data handling, making the system easier to scale and extend.
 
 ## Architecture Diagram
 
-JPG FILE
+   ![Architecture Diagram](../Screenshot/Getting-Started/Architecture.png)
 
 ## Explanation of Components
 
-The architecture for this lab involves the following key components:
+The architecture is composed of a small set of focused services that work together to separate user interaction, AI reasoning, business logic, and data persistence.
 
-- **Azure OpenAI Resource:** Provision an Azure OpenAI resource to access OpenAI’s advanced AI models and integrate them into custom applications.
+- **User Interaction & Entry Points:**  
+  The system exposes two frontends using Azure Static Web Apps. The Agent Web App serves as the conversational interface where users interact with the AI agent, while the Burger Web App acts as a live order dashboard. Authentication is handled seamlessly through Azure Easy Auth, ensuring each request carries user identity without additional implementation effort.
 
-- **Model Deployment:** Deploy an OpenAI model to enable functionality for testing and application use cases.
+- **AI Reasoning & Tool Orchestration:**  
+  The core intelligence resides in the Agent API (Azure Function), which hosts the LangChain.js agent. It interprets user intent, maintains chat context, and determines when to invoke tools instead of responding directly. Rather than calling APIs itself, the agent communicates with the Burger MCP Server, which exposes a standardized set of tools using the Model Context Protocol (MCP). This abstraction allows the same tools to be reused across multiple clients, including web apps and IDE integrations.
 
-- **Application Setup:** Set up an application in Cloud Shell to interact with the deployed model and test its capabilities.
+- **Business Logic & Data Layer:**  
+  The Burger API encapsulates all domain-specific operations such as managing menu data and processing orders. It interacts with Azure Cosmos DB, which stores application state across three logical areas: orders and menu data, user profiles, and chat history. Azure Blob Storage complements this by serving static assets like menu images, keeping binary data separate from structured data.
 
-- **Application Configuration:** Configure the application to meet specific requirements, ensuring seamless integration with Azure OpenAI services.
-
-- **Application Testing:** Test the application to validate its performance, ensuring it interacts effectively with the deployed model.
+- **Platform Services & Observability:**  
+  Supporting services such as Azure Application Insights and Log Analytics provide visibility into system behavior, enabling monitoring and debugging across all components. Managed Identities are used throughout to securely connect services (e.g., Functions to Cosmos DB and Storage) without relying on credentials, reinforcing a secure, production-ready design.
 
 ## Getting Started with Lab
 
