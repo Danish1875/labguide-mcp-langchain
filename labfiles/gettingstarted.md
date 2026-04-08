@@ -1,6 +1,6 @@
-# Integrate Azure OpenAI into your app
+# Implementing a Serverless AI Agent with LangChain.js and Model Context Protocol
 
-### Overall Estimated Duration: 5 hour 30 minutes
+### Overall Estimated Duration: 5 hours 30 minutes
 
 ## Overview
 

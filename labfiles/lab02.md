@@ -4,11 +4,11 @@
 
 ## Exercise Overview
 
-Your five services are deployed and running, but the agent is not yet fully operational. Two things are still missing: the Agent API needs its OpenAI connection verified and the model configured correctly, and the Cosmos DB database is empty — meaning the MCP tools have no burger menu data to return.
+Your five services are deployed and running, but the agent is not yet fully operational. Two things are still missing: the Agent API needs its OpenAI connection verified and the model configured correctly, and the **Cosmos DB database is empty** — meaning the MCP tools have no burger menu data to return.
 
 In this lab, you will configure the Agent API's Function App settings to ensure the correct model and API version are wired in, then use **GenAIScript** to generate and seed the burger menu into Cosmos DB, and finally verify the complete end-to-end flow by placing a live order through the chat interface.
 
-## Exercise Objectives
+## Objectives
 
 - **Task 1:** Configure the Agent API Function App with the correct OpenAI model settings
 - **Task 2:** Generate and seed the burger menu data into Cosmos DB
@@ -22,27 +22,27 @@ The Agent API reads its OpenAI configuration entirely from environment variables
 
 In this task, you will set the missing `OPENAI_API_VERSION` setting on the Function App and verify the full configuration before restarting the service.
 
-> **How the Agent API calls OpenAI:** The code in `packages/agent-api/src/functions/chats-post.ts` constructs the model client like this:
->
-> ```typescript
-> const model = new ChatOpenAI({
->   configuration: {
->     baseURL: azureOpenAiEndpoint,
->     defaultQuery: { 'api-version': process.env.OPENAI_API_VERSION ?? '2025-01-01-preview' },
->     defaultHeaders: { 'api-key': process.env.AZURE_OPENAI_API_KEY },
->   },
->   modelName: process.env.AZURE_OPENAI_MODEL ?? 'o4-mini',
->   streaming: true,
->   useResponsesApi: false,
->   apiKey: process.env.AZURE_OPENAI_API_KEY ?? getAzureOpenAiTokenProvider(),
-> });
-> ```
->
-> The `defaultQuery` appends `?api-version=...` to every request automatically. The `baseURL` must be your endpoint **without** any path suffix — just `https://your-resource.openai.azure.com/`. The SDK builds the full URL from there.
+> **How the Agent API calls OpenAI:** Open your VSCode and navigate to the file `packages/agent-api/src/functions/chats-post.ts`. The code constructs the model client like this:
+
+ ```typescript
+ const model = new ChatOpenAI({
+   configuration: {
+     baseURL: azureOpenAiEndpoint,
+     defaultQuery: { 'api-version': process.env.OPENAI_API_VERSION ?? '2025-01-01-preview' },
+     defaultHeaders: { 'api-key': process.env.AZURE_OPENAI_API_KEY },
+   },
+   modelName: process.env.AZURE_OPENAI_MODEL ?? 'o4-mini',
+   streaming: true,
+   useResponsesApi: false,
+   apiKey: process.env.AZURE_OPENAI_API_KEY ?? getAzureOpenAiTokenProvider(),
+ });
+ ```
+
+> The `defaultQuery` appends `?api-version=...` to every request automatically. The `baseURL` must be your endpoint **without** any path suffix — just `https://your-resource.openai.azure.com/`. The SDK builds the full URL from there. Male sure to change the `modelName` to match your deployment name.
 
 ### Steps
 
-1. In **Azure Cloud Shell**, run the following command to confirm what is currently set on the Agent API Function App. Replace the function app name with yours from Exercise 1:
+1. In **Azure Cloud Shell**, run the following command to confirm what is currently set on the Agent API Function App. Replace the function app name with yours from Lab 01:
 
    ```bash
    az functionapp config appsettings list \
@@ -53,14 +53,15 @@ In this task, you will set the missing `OPENAI_API_VERSION` setting on the Funct
    ```
 
    > **Don't know your Function App name?** Run this to list all Function Apps in your resource group:
-   > ```bash
-   > az functionapp list --resource-group <inject key="ResourceGroupName"></inject> --query "[].name" --output table
-   > ```
+
+   ```bash
+   az functionapp list --resource-group <inject key="ResourceGroupName"></inject> --query "[].name" --output table
+   ```
    > Look for the one prefixed with `func-agent-api-`.
 
-   ![List agent API settings](../Screenshots/Exercise-02/ex02-task01-step01.png)
+   ![List agent API settings](../Screenshot/assets/lab02/task1.1.png)
 
-2. You will likely see `OPENAI_API_VERSION` is missing. Set it now:
+2. If you see `OPENAI_API_VERSION` is missing. Set it now:
 
    ```bash
    az functionapp config appsettings set \
@@ -68,8 +69,6 @@ In this task, you will set the missing `OPENAI_API_VERSION` setting on the Funct
      --resource-group <inject key="ResourceGroupName"></inject> \
      --settings OPENAI_API_VERSION="2025-01-01-preview"
    ```
-
-   ![Set API version](../Screenshots/Exercise-02/ex02-task01-step02.png)
 
 3. Now verify that your `AZURE_OPENAI_API_ENDPOINT` is in the correct format. The endpoint format must look exactly like this:
 
@@ -88,8 +87,6 @@ In this task, you will set the missing `OPENAI_API_VERSION` setting on the Funct
 
    > **Why does the format matter so much?** The `ChatOpenAI` client appends `/openai/deployments/<model>/chat/completions` to whatever `baseURL` you provide. If you include those path segments yourself, the final URL becomes a broken double-path like `.../openai/openai/deployments/...` — and Azure returns a 404. The endpoint should stop at the domain name.
 
-   ![Verify endpoint format](../Screenshots/Exercise-02/ex02-task01-step03.png)
-
 4. Restart the Function App to apply all setting changes:
 
    ```bash
@@ -98,13 +95,11 @@ In this task, you will set the missing `OPENAI_API_VERSION` setting on the Funct
      --resource-group <inject key="ResourceGroupName"></inject>
    ```
 
-   ![Restart function app](../Screenshots/Exercise-02/ex02-task01-step04.png)
+   ![Restart function app](../Screenshot/assets/lab02/task1.4.png)
 
 5. Wait 30 seconds for the Function App to restart, then do a quick smoke test. Open your **Agent Web App URL** in a browser and send a simple message like *"hi"*. 
 
    At this stage you may get a brief response or still see an empty reply — that is expected since the database has no burger data yet. What you should **not** see is a browser console error showing `502 Bad Gateway`. If you do, go back and double-check step 3 — the endpoint format is the most common culprit.
-
-   ![Smoke test chat](../Screenshots/Exercise-02/ex02-task01-step05.png)
 
 <validation step="validate-agent-api-settings" />
 
@@ -122,34 +117,36 @@ The Cosmos DB instance created by `azd up` contains the correct databases and co
 
 ### Steps
 
-1. GenAIScript needs your OpenAI credentials available as shell environment variables (separate from the `azd` env store). In Cloud Shell, set them for this session:
+1. GenAIScript needs your OpenAI credentials available as shell environment variables (separate from the `azd` env store). In your terminal powershell, set them for this session:
 
-   ```bash
-   export AZURE_OPENAI_API_ENDPOINT="https://<your-resource-name>.openai.azure.com/"
-   export AZURE_OPENAI_API_KEY="<your-key>"
-   export AZURE_OPENAI_MODEL="<your-deployment-name>"
-   export GENAISCRIPT_DEFAULT_MODEL="azure:<your-deployment-name>"
+   ```powershell
+   $env:AZURE_OPENAI_API_ENDPOINT="https://<your-resource-name>.openai.azure.com/"
+   ```
+   ```powershell
+   $env:AZURE_OPENAI_API_KEY="<your-key>"
+   ```
+   ```powershell
+   $env:AZURE_OPENAI_MODEL="<your-deployment-name>"
+   ```
+   ```powershell
+   $env:GENAISCRIPT_DEFAULT_MODEL="azure:<your-deployment-name>"
    ```
 
    For example, if your deployment name is `gpt-4o-mini`:
 
-   ```bash
-   export GENAISCRIPT_DEFAULT_MODEL="azure:gpt-4o-mini"
+   ```powershell
+   $env:GENAISCRIPT_DEFAULT_MODEL="azure:gpt-4o-mini"
    ```
-
-   ![Set GenAIScript env vars](../Screenshots/Exercise-02/ex02-task02-step01.png)
 
    > **These are session-only variables.** They are not saved permanently — they only exist for the duration of this Cloud Shell session. That is intentional, since data generation only needs to run once.
 
 2. From the project root, run the burger data generation script:
 
-   ```bash
+   ```powershell
    npm run generate:burgers --workspace=burger-data
    ```
 
    This calls your Azure OpenAI model to generate a set of burgers with names, descriptions, and topping combinations. You will see the LLM prompt and response printed to the terminal as it runs.
-
-   ![Generate burgers](../Screenshots/Exercise-02/ex02-task02-step02.png)
 
    > This typically takes 30–60 seconds. The generated data is saved to `packages/burger-data/data/`.
 
@@ -161,20 +158,17 @@ The Cosmos DB instance created by `azd up` contains the correct databases and co
 
    You should see JSON files such as `burgers.json` and `toppings.json`.
 
-   ![Verify generated data](../Screenshots/Exercise-02/ex02-task02-step03.png)
+   ![Verify generated data](../Screenshot/assets/lab02/task2.3.png)
 
-4. Copy the generated data into the Burger API package. Cloud Shell runs Linux, so use the standard `cp` command:
+4. Copy the generated data into the Burger API package using PowerShell in your vscode terminal:
 
-   ```bash
-   cp -R packages/burger-data/data/* packages/burger-api/data/
+   ```powershell
+   xcopy /E /I /Y packages\burger-data\data\* packages\burger-api\data\
    ```
 
-   ![Copy data](../Screenshots/Exercise-02/ex02-task02-step04.png)
+This copies all generated JSON files into the Burger API's `data` folder so they can be uploaded during the next deployment.
 
-   > **On Windows terminals** (if running locally instead of Cloud Shell), use `xcopy` instead:
-   > ```powershell
-   > xcopy /E /I /Y packages\burger-data\data\* packages\burger-api\data\
-   > ```
+   ![Copy data](../Screenshot/assets/lab02/task2.4.png)
 
 5. Redeploy the Burger API service so the newly copied data gets uploaded to Azure:
 
@@ -184,17 +178,17 @@ The Cosmos DB instance created by `azd up` contains the correct databases and co
 
    This packages and deploys only the `burger-api` service — no need to redeploy everything.
 
-   ![Redeploy burger API](../Screenshots/Exercise-02/ex02-task02-step05.png)
+   ![Redeploy burger API](../Screenshot/assets/lab02/task2.5.png)
 
 6. Once the deployment completes, verify the data was loaded successfully by calling the Burger API directly. Replace the URL with your Burger API endpoint from Exercise 1:
 
    ```bash
-   curl https://<your-burger-api-url>/api/burgers
+   Invoke-WebRequest https://<your-burger-api-url>/api/burgers
    ```
 
    You should receive a JSON array of burger objects. If you see an empty array `[]`, wait 30 seconds and try again — the Function App may still be warming up.
 
-   ![Verify burger data](../Screenshots/Exercise-02/ex02-task02-step06.png)
+   ![Verify burger data](../Screenshot/assets/lab02/task2.6.png)
 
 <validation step="validate-burger-data-seeded" />
 
@@ -212,11 +206,11 @@ This task also gives you a first look at how the LangChain.js agent uses **MCP t
 
 1. Open your **Agent Web App URL** in a browser and sign in if prompted. You should land on the **Contoso Burgers AI Agent** chat interface.
 
-   ![Agent Web App](../Screenshots/Exercise-02/ex02-task03-step01.png)
+   ![Agent Web App](../Screenshot/assets/lab02/task3.1.png)
 
 2. In a **second browser tab**, open your **Burger Web App URL**. This is the live orders dashboard — keep both tabs visible side by side if your screen allows.
 
-   ![Burger Web App dashboard](../Screenshots/Exercise-02/ex02-task03-step02.png)
+   ![Burger Web App dashboard](../Screenshot/assets/lab02/task3.2.png)
 
 3. Back in the Agent Web App, send this message:
 
