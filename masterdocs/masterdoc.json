@@ -1,0 +1,29 @@
+[
+   {
+    "Name": "Serverless AI Agent with LangChain.js and Model Context Protocol",
+    "Language": "English",
+    "BaseURL": "https://github.com/Danish1875/labguide-mcp-langchain",
+    "Files": [
+      {
+        "RawFilePath": "https://raw.githubusercontent.com/Danish1875/labguide-mcp-langchain/refs/heads/main/labfiles/gettingstarted.md",
+        "Order": 1
+        },
+       {
+        "RawFilePath": "https://raw.githubusercontent.com/Danish1875/labguide-mcp-langchain/refs/heads/main/labfiles/lab01.md",
+        "Order": 2
+        },
+        {
+        "RawFilePath": "https://raw.githubusercontent.com/Danish1875/labguide-mcp-langchain/refs/heads/main/labfiles/lab02.md",
+        "Order": 3
+        },
+        {
+        "RawFilePath": "https://raw.githubusercontent.com/Danish1875/labguide-mcp-langchain/refs/heads/main/labfiles/lab03.md",
+        "Order": 4
+       },
+       {
+        "RawFilePath": "https://raw.githubusercontent.com/Danish1875/labguide-mcp-langchain/refs/heads/main/labfiles/lab04.md",
+        "Order": 5
+      }
+     ]  
+   }
+]
