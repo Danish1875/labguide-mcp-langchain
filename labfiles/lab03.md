@@ -1,12 +1,12 @@
-# Lab 03: Explore MCP Tools and Integrate with GitHub Copilot
+# Exercise 03: Explore MCP Tools and Integrate with GitHub Copilot
 
 ### Estimated Duration: 1 Hour
 
-## Lab Overview
+## Exercise Overview
 
 So far you have interacted with the Contoso Burgers agent exclusively through the web chat interface. But one of the most powerful aspects of the Model Context Protocol is that the same MCP server can be consumed by **any MCP-compatible client** — not just the web app.
 
-In this lab, you will connect directly to the live Burger MCP Server using the **MCP Inspector**, a browser-based tool that lets you call MCP tools manually without any AI in the middle. You will then integrate the same MCP server into **GitHub Copilot in VS Code**, enabling you to place burger orders and query the menu directly from your IDE using natural language in the Copilot chat sidebar.
+In this exercise, you will connect directly to the live Burger MCP Server using the **MCP Inspector**, a browser-based tool that lets you call MCP tools manually without any AI in the middle. You will then integrate the same MCP server into **GitHub Copilot in VS Code**, enabling you to place burger orders and query the menu directly from your IDE using natural language in the Copilot chat sidebar.
 
 ## Exercise Objectives
 

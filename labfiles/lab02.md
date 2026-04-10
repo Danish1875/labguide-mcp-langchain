@@ -1,12 +1,12 @@
-# Lab 02: Configure the Agent, Seed the Database, and Verify the Full Stack
+# Exercise 02: Configure the Agent, Seed the Database, and Verify the Full Stack
 
 ### Estimated Duration: 1 Hour 30 Minutes
 
-## Lab Overview
+## Exercise Overview
 
 Your five services are deployed and running, but the agent is not yet fully operational. Two things are still missing: the Agent API needs its OpenAI connection verified and the model configured correctly, and the **Cosmos DB database is empty** — meaning the MCP tools have no burger menu data to return.
 
-In this lab, you will configure the Agent API's Function App settings to ensure the correct model and API version are wired in, then use **GenAIScript** to generate and seed the burger menu into Cosmos DB, and finally verify the complete end-to-end flow by placing a live order through the chat interface.
+In this exercise, you will configure the Agent API's Function App settings to ensure the correct model and API version are wired in, then use **GenAIScript** to generate and seed the burger menu into Cosmos DB, and finally verify the complete end-to-end flow by placing a live order through the chat interface.
 
 ## Objectives
 
@@ -42,7 +42,7 @@ In this task, you will set the missing `OPENAI_API_VERSION` setting on the Funct
 
 ### Steps
 
-1. In **Azure Cloud Shell**, run the following command to confirm what is currently set on the Agent API Function App. Replace the function app name with yours from Lab 01:
+1. In **Azure Cloud Shell**, run the following command to confirm what is currently set on the Agent API Function App. Replace the function app name with yours from Exercise 01:
 
    ```bash
    az functionapp config appsettings list \
@@ -138,8 +138,7 @@ The Cosmos DB instance created by `azd up` contains the correct databases and co
    $env:GENAISCRIPT_DEFAULT_MODEL="azure:gpt-4o-mini"
    ```
 
-   **(Optional)** you can also generate images for the burgers using DALL-E-3 (Deploy this model if you feel experimental). 
-   >Note that this lab only uses the generated images in the Web App, some may appear some won't and thats perfectly fine:
+   **(Optional)** you can also generate images for the burgers using DALL-E-3 (Deploy this model if you feel experimental).
 
    ```powershell
    $env:GENAISCRIPT_DEFAULT_MODEL_IMAGE = "azure:dall-e-3"
@@ -266,7 +265,7 @@ This task also gives you a first look at how the LangChain.js agent uses **MCP t
 
 <validation step="validate-end-to-end-agent" />
 
-**Congratulations** on completing Lab 02! The Contoso Burgers AI Agent is now fully operational. You have verified the complete flow from chat message to MCP tool call to Cosmos DB and back. In Exercise 3, you will explore the MCP tools directly, integrate the server with GitHub Copilot, and add a brand new tool to the system.
+**Congratulations** on completing Exercise 02! The Contoso Burgers AI Agent is now fully operational. You have verified the complete flow from chat message to MCP tool call to Cosmos DB and back. In Exercise 3, you will explore the MCP tools directly, integrate the server with GitHub Copilot, and add a brand new tool to the system.
 
 ---
 
@@ -279,6 +278,6 @@ In this exercise, you:
 - Validated the full end-to-end agent flow — from chat message to MCP tool calls to live database reads and writes
 - Observed how the LangChain.js agent chains multiple tool calls to complete a single natural language request
 
-Click **Next** to proceed to Lab 03, where you will explore MCP tools directly and extend the agent with a new capability.
+Click **Next** to proceed to Exercise 03, where you will explore MCP tools directly and extend the agent with a new capability.
 
 ![Next page](../Screenshot/Getting-Started/nextpage1.png)

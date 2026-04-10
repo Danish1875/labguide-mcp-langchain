@@ -1,18 +1,18 @@
-# Lab 01: Provision Azure OpenAI and Deploy the MCP Agent Infrastructure
+# Exercise 01: Provision Azure OpenAI and Deploy the MCP Agent Infrastructure
 
 ### Estimated Duration: 1 Hour 30 Minutes
 
-## Lab Overview
+## Exercise Overview
 
-Before any AI agent can reason, plan, or call tools, it needs three things: a language model to think with, infrastructure to run on, and services wired together correctly. In this lab, you will set all three up from scratch.
+Before any AI agent can reason, plan, or call tools, it needs three things: a language model to think with, infrastructure to run on, and services wired together correctly. In this exercise, you will set all three up from scratch.
 
 You will start by deploying an **Azure OpenAI resource** and model from the Azure Portal — this is the LLM brain that powers the Contoso Burgers agent. You will then clone the application repository into Azure Cloud Shell, configure your deployment environment using the Azure Developer CLI (`azd`), and deploy the entire multi-service application to your Azure resource group in a single command.
 
-By the end of this lab, five live Azure services will be running in your resource group, all wired together and ready for configuration — the Agent Web App, Agent API, Burger MCP Server, Burger API, and Burger Web App.
+By the end of this exercise, five live Azure services will be running in your resource group, all wired together and ready for configuration — the Agent Web App, Agent API, Burger MCP Server, Burger API, and Burger Web App.
 
-## Lab Objectives
+## Exercise Objectives
 
-In this lab, you will complete the following tasks:
+In this exercise, you will complete the following tasks:
 
 - **Task 1:** Deploy an Azure OpenAI Resource and Model
 - **Task 2:** Clone the Repository and Configure the Deployment Environment
@@ -22,9 +22,9 @@ In this lab, you will complete the following tasks:
 
 ## Task 1: Deploy an Azure OpenAI Resource and Model
 
-The agent in this lab uses Azure OpenAI to perform all its reasoning — understanding your message, deciding which tools to call, and composing a natural language reply. Before deploying the application, you need an Azure OpenAI resource and a deployed model. In this task, you will create the resource, deploy a model, and save your credentials to use in the next task.
+The agent in this exercise uses Azure OpenAI to perform all its reasoning — understanding your message, deciding which tools to call, and composing a natural language reply. Before deploying the application, you need an Azure OpenAI resource and a deployed model. In this task, you will create the resource, deploy a model, and save your credentials to use in the next task.
 
-> **Note:** Azure OpenAI resources must be created in a region that supports the model you intend to deploy. The lab uses **East US 2** as the default region. If your subscription has capacity constraints, **Sweden Central** or **North Europe** are good alternatives.
+> **Note:** Azure OpenAI resources must be created in a region that supports the model you intend to deploy. The exercise uses **East US 2** as the default region. If your subscription has capacity constraints, **Sweden Central** or **North Europe** are good alternatives.
 
 ### Steps
 
@@ -123,8 +123,8 @@ In this task, you will open Azure Cloud Shell, clone the Contoso Burgers reposit
 
    You should see Node.js version `v22.x.x` or higher and an `azd` version. If `azd` is not found, install it with:
 
-   ```bash
-   curl -fsSL https://aka.ms/install-azd.sh | bash
+   ```powershell
+   winget install microsoft.azd
    ```
 
 3. Clone the Contoso Burgers repository to your local machine:
@@ -188,7 +188,7 @@ In this task, you will open Azure Cloud Shell, clone the Contoso Burgers reposit
    azd env set OPENAI_API_VERSION "2025-04-01-preview"
    ```
 
-   > **Endpoint format matters.** Your endpoint must follow this exact pattern — ending with `.openai.azure.com/` and nothing more:
+   > **Endpoint format matters.** Your endpoint must follow this exact pattern — ending with `.openai.azure.com/deployments/<model-name>` and nothing more:
    > ```
    > https://xxxx.openai.azure.com/openai/deployments/<model-name>
    > ```
@@ -284,10 +284,10 @@ Understanding what the Bicep template creates helps you know what you're working
    azd env get-values > .env
    ```
 
-   Then verify the file was created:
+   Then verify the file was created using the powershell command:
 
-   ```bash
-   cat .env
+   ```powershell
+   Get-Content .env
    ```
 
    You should see all your service URLs, the Cosmos DB endpoint, storage URL, and OpenAI settings printed out.
@@ -303,7 +303,7 @@ Understanding what the Bicep template creates helps you know what you're working
 
    ![Agent API app settings](../Screenshot/assets/lab01/task3.7.png)
 
-   > **Why check this?** The Bicep template injects these values directly into the Function App's application settings during deployment. When the Node.js code runs on Azure, it reads them via `process.env`. If any are missing or malformed, the agent will fail to connect to OpenAI — which you will diagnose in Lab 02 on the next page.
+   > **Why check this?** The Bicep template injects these values directly into the Function App's application settings during deployment. When the Node.js code runs on Azure, it reads them via `process.env`. If any are missing or malformed, the agent will fail to connect to OpenAI — which you will diagnose in Exercise 02 on the next page.
 
 8. Go back to your resource group and open the **Agent Web App** resource, then open your **Agent Web App URL** in a browser.
 
@@ -311,13 +311,13 @@ Understanding what the Bicep template creates helps you know what you're working
    You should see the **Contoso Burgers AI Agent** login page. Sign in with your Microsoft/Github account.
    > **Try sending a message:** *"What burgers do you have?"*
    
-    **Expected behavior at this stage:** The chat interface will load and accept messages, but the agent will likely return no results or an empty response. This is normal — the Cosmos DB database is empty and has no burger data yet. You will fix this in Lab 02.
+    **Expected behavior at this stage:** The chat interface will load and accept messages, but the agent will likely return no results or an empty response. This is normal — the Cosmos DB database is empty and has no burger data yet. You will fix this in Exercise 02.
 
    ![Empty chat response](../Screenshot/assets/lab01/task3.8.1.png)
 
 <validation step="validate-full-deployment" />
 
-> **Congratulations** on completing Lab 01! All five services are now live in Azure. Your infrastructure is provisioned, your code is deployed, and your Azure OpenAI credentials are wired in. In Lab 02, you will seed the database with burger menu data and verify the full end-to-end agent flow.
+> **Congratulations** on completing Exercise 01! All five services are now live in Azure. Your infrastructure is provisioned, your code is deployed, and your Azure OpenAI credentials are wired in. In Exercise 02, you will seed the database with burger menu data and verify the full end-to-end agent flow.
 
 ---
 
@@ -331,6 +331,6 @@ In this exercise, you:
 - Ran `azd up` to provision all Azure infrastructure via Bicep and deploy all five application services
 - Verified the deployed resources in the Azure Portal and confirmed the Agent API received the correct environment variables
 
-Click **Next** to proceed to Lab 02, where you will seed the database and get the agent fully operational.
+Click **Next** to proceed to Exercise 02, where you will seed the database and get the agent fully operational.
 
 ![Next page](../Screenshot/Getting-Started/nextpage1.png)
