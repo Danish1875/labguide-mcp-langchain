@@ -2,7 +2,7 @@
 
 ### Estimated Duration: 1 Hour 30 Minutes
 
-## Exercise Overview
+## Lab Overview
 
 Your five services are deployed and running, but the agent is not yet fully operational. Two things are still missing: the Agent API needs its OpenAI connection verified and the model configured correctly, and the **Cosmos DB database is empty** — meaning the MCP tools have no burger menu data to return.
 
@@ -73,19 +73,19 @@ In this task, you will set the missing `OPENAI_API_VERSION` setting on the Funct
 3. Now verify that your `AZURE_OPENAI_API_ENDPOINT` is in the correct format. The endpoint format must look exactly like this:
 
    ```
-   https://openai-mcp-XXXXXX.openai.azure.com/
+   https://xxxxx.openai.azure.com/openai/deployments/<model-name>
    ```
 
-   It must **not** contain `/openai/deployments/...`, `/chat/completions`, or `?api-version=...`. If yours includes any of these, correct it now:
+   >Replace `xxxxx` with your resource name and `<model-name>` with your deployment name. The endpoint must end with the deployment path segment and **not** include any query parameters.
 
    ```bash
    az functionapp config appsettings set \
      --name <your-agent-api-function-app-name> \
      --resource-group <inject key="ResourceGroupName"></inject> \
-     --settings AZURE_OPENAI_API_ENDPOINT="https://<your-resource-name>.openai.azure.com/"
+     --settings AZURE_OPENAI_API_ENDPOINT="https://xxxx.openai.azure.com/openai/deployments/<model-name>"
    ```
 
-   > **Why does the format matter so much?** The `ChatOpenAI` client appends `/openai/deployments/<model>/chat/completions` to whatever `baseURL` you provide. If you include those path segments yourself, the final URL becomes a broken double-path like `.../openai/openai/deployments/...` — and Azure returns a 404. The endpoint should stop at the domain name.
+   > **Why does the format matter so much?** The `ChatOpenAI` client appends the deployment path and if not configured correctly, Azure returns a 404-Model Not Found. The endpoint should be carefully constructed as shown above.
 
 4. Restart the Function App to apply all setting changes:
 
@@ -138,14 +138,24 @@ The Cosmos DB instance created by `azd up` contains the correct databases and co
    $env:GENAISCRIPT_DEFAULT_MODEL="azure:gpt-4o-mini"
    ```
 
-   > **These are session-only variables.** They are not saved permanently — they only exist for the duration of this Cloud Shell session. That is intentional, since data generation only needs to run once.
+   **(Optional)** you can also generate images for the burgers using DALL-E-3 (Deploy this model if you feel experimental). 
+   >Note that this lab only uses the generated images in the Web App, some may appear some won't and thats perfectly fine:
+
+   ```powershell
+   $env:GENAISCRIPT_DEFAULT_MODEL_IMAGE = "azure:dall-e-3"
+   ```
+
+   > **These are session-only variables.** They are not saved permanently — they only exist for the duration of this Cloud Shell session. That is **intentional**, since data generation only needs to run once.
 
 2. From the project root, run the burger data generation script:
 
    ```powershell
    npm run generate:burgers --workspace=burger-data
    ```
-
+   **Optional: Generate Images**
+   ```powershell
+   npm run generate:images --workspace=burger-data
+   ```
    This calls your Azure OpenAI model to generate a set of burgers with names, descriptions, and topping combinations. You will see the LLM prompt and response printed to the terminal as it runs.
 
    > This typically takes 30–60 seconds. The generated data is saved to `packages/burger-data/data/`.
@@ -214,33 +224,31 @@ This task also gives you a first look at how the LangChain.js agent uses **MCP t
 
 3. Back in the Agent Web App, send this message:
 
-   *"What burgers do you have on the menu?"*
+   `"What burgers do you have on the menu?"`
 
    Watch the response stream in. You should see the agent's thinking steps appear — tool calls like `get_burgers` being invoked — followed by a formatted list of burgers with names and descriptions.
 
-   ![Menu response](../Screenshots/Exercise-02/ex02-task03-step03.png)
+   ![Menu response](../Screenshot/assets/lab02/task3.3.png)
 
    > **What just happened?** The LangChain.js agent received your message, decided it needed to call the `get_burgers` MCP tool, sent that tool call to the Burger MCP Server, which in turn called `GET /api/burgers` on the Burger API, retrieved the data from Cosmos DB, and returned it up the chain. The agent then formatted the results into a readable reply. All of this happened in a single streaming response.
 
 4. Now place an order:
 
-   *"Order two Classic Cheeseburgers for me"*
+   `"Order a Vegan Burger for me"`
 
    The agent will first call `get_burgers` to find the correct burger ID, then call `place_order` with your user ID and the burger details.
 
-   ![Place order](../Screenshots/Exercise-02/ex02-task03-step04.png)
+   ![Place order](../Screenshot/assets/lab02/task3.4.png)
 
 5. Switch to the **Burger Web App** tab. Your order should appear on the dashboard within a few seconds.
 
-   ![Order appears on dashboard](../Screenshots/Exercise-02/ex02-task03-step05.png)
+   ![Order appears on dashboard](../Screenshot/assets/lab02/task3.5.png)
 
-6. Back in the chat, check your order history:
+6. Back in the chat, you can also check how the agent thinks and fetches the mcp tool:
 
-   *"Show me my recent orders"*
+   Click on `show intermediate steps` and then further explore what steps were taken in detail to produce the response.
 
-   The agent will call `get_orders` and return a summary of your placed orders.
-
-   ![Order history](../Screenshots/Exercise-02/ex02-task03-step06.png)
+   ![Intermediate steps](../Screenshot/assets/lab02/task3.6.png)
 
 7. Finally, try cancelling the order:
 
@@ -248,17 +256,17 @@ This task also gives you a first look at how the LangChain.js agent uses **MCP t
 
    The agent will call `get_orders` to find your most recent pending order, then call `delete_order_by_id` to cancel it. Notice how the agent chains two tool calls together to complete a single user request.
 
-   ![Cancel order](../Screenshots/Exercise-02/ex02-task03-step07.png)
+   ![Cancel order](../Screenshot/assets/lab02/task3.7.png)
 
-8. Reload the page and start a **new chat session**. Send the same question again: *"Show me my recent orders"*. Your order history from the previous session is still there — persisted in Cosmos DB under your user ID.
+8. Reload the page and start a **new chat session**. Send the same question again: `"Show me my recent orders"`. Your order history from the previous session is still there — persisted in Cosmos DB under your user ID.
 
    > **Session history is per-user and persistent.** Every chat session is stored in the `historyDB` Cosmos DB container. When you start a new session, the agent starts fresh — but your order history in `burgerDB` remains intact across all sessions.
 
-   ![Persistent history](../Screenshots/Exercise-02/ex02-task03-step08.png)
+   ![Persistent history](../Screenshot/assets/lab02/task3.8.png)
 
 <validation step="validate-end-to-end-agent" />
 
-> **Congratulations** on completing Exercise 2! The Contoso Burgers AI Agent is now fully operational. You have verified the complete flow from chat message to MCP tool call to Cosmos DB and back. In Exercise 3, you will explore the MCP tools directly, integrate the server with GitHub Copilot, and add a brand new tool to the system.
+**Congratulations** on completing Lab 02! The Contoso Burgers AI Agent is now fully operational. You have verified the complete flow from chat message to MCP tool call to Cosmos DB and back. In Exercise 3, you will explore the MCP tools directly, integrate the server with GitHub Copilot, and add a brand new tool to the system.
 
 ---
 
@@ -271,6 +279,6 @@ In this exercise, you:
 - Validated the full end-to-end agent flow — from chat message to MCP tool calls to live database reads and writes
 - Observed how the LangChain.js agent chains multiple tool calls to complete a single natural language request
 
-Click **Next** to proceed to Exercise 3, where you will explore MCP tools directly and extend the agent with a new capability.
+Click **Next** to proceed to Lab 03, where you will explore MCP tools directly and extend the agent with a new capability.
 
-![Next page](../Screenshots/Exercise-02/ex02-next.png)
+![Next page](../Screenshot/Getting-Started/nextpage1.png)

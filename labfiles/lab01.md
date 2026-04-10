@@ -190,9 +190,9 @@ In this task, you will open Azure Cloud Shell, clone the Contoso Burgers reposit
 
    > **Endpoint format matters.** Your endpoint must follow this exact pattern — ending with `.openai.azure.com/` and nothing more:
    > ```
-   > https://openai-mcp-XXXXXX.openai.azure.com/
+   > https://xxxx.openai.azure.com/openai/deployments/<model-name>
    > ```
-   > Do **not** include `/openai/deployments/...` or `?api-version=...` — the application constructs the full URL internally. An incorrectly formatted endpoint is the most common cause of `404 Model Not Found` errors.
+   > Do **not** include `?api-version=...` — the application constructs the full URL internally. An incorrectly formatted endpoint is the most common cause of `404 Model Not Found` errors.
 
 
 8. Retrieve your Azure Principal ID and set it as well — this is required so the Bicep deployment can assign the correct Cosmos DB and Storage roles to your user:

@@ -2,7 +2,7 @@
 
 ### Estimated Duration: 1 Hour 30 Minutes
 
-## Exercise Overview
+## Lab Overview
 
 You have deployed the agent, configured it, seeded the database, and explored the existing 9 MCP tools. Now it is time to go one step further — you will **add two brand new tools to the Burger MCP Server yourself**.
 
@@ -27,12 +27,13 @@ Both tools are **read-only** — they only fetch data, never modify it. If anyth
 
 All MCP tools in this project are registered inside a single file: `packages/burger-mcp/src/mcp.ts`. Each tool is defined using `server.registerTool(...)` — a name, a description, an input schema, and an async handler function that fetches data from the Burger API and returns a result.
 
-You will add two new `server.registerTool(...)` blocks to this file. You will not modify any existing code — only append new blocks before the final closing line of the file.
+You will add two new `server.registerTool(...)` blocks to this file. You will not modify any existing code — only **append new blocks** before the final closing line of the file.
 
 > **Before you start — take note of your Burger API URL.** Both tools call the Burger API internally. You will need to confirm the `burgerApiUrl` variable is already available in `mcp.ts` before pasting the new code. Run this to get your URL if needed:
-> ```bash
-> azd env get-values | grep BURGER_API_URL
-> ```
+
+```powershell
+azd env get-values | Select-String "BURGER_API_URL"
+```
 
 ### Steps
 
@@ -44,15 +45,13 @@ You will add two new `server.registerTool(...)` blocks to this file. You will no
    packages/burger-mcp/src/mcp.ts
    ```
 
-   ![Open mcp.ts](../Screenshots/Exercise-04/ex04-task01-step02.png)
+   ![Open mcp.ts](../Screenshot/assets/lab04/task1.2.png)
 
 3. Scroll to the **bottom of the file**. You will see a series of `server.registerTool(...)` blocks — one for each of the 9 existing tools. Find the **last** `server.registerTool(...)` block and identify the closing `});` line that ends it.
 
-   You will paste both new tool blocks **after** that closing `});` and **before** the final `return server;` line at the very bottom.
+    You will paste both new tool blocks **after** that closing `});` and **before** the final `return server;` line at the very bottom.
 
-   ![Locate insert point](../Screenshots/Exercise-04/ex04-task01-step03.png)
-
-   > **Important:** Do not modify, delete, or move any existing code. You are only adding new blocks between the last existing tool and the `return server;` statement.
+    > **Important:** Do not modify, delete, or move any existing code. You are only adding new blocks between the last existing tool and the `return server;` statement **(line 133)**
 
 4. Paste the following code block for **Tool 1: `get_order_estimated_wait`** at the insert point:
 
@@ -116,8 +115,6 @@ You will add two new `server.registerTool(...)` blocks to this file. You will no
      },
    );
    ```
-
-   ![Paste Tool 1](../Screenshots/Exercise-04/ex04-task01-step04.png)
 
 5. Immediately after Tool 1's closing `);`, paste the following block for **Tool 2: `get_menu_recommendation`**:
 
@@ -187,8 +184,6 @@ You will add two new `server.registerTool(...)` blocks to this file. You will no
    );
    ```
 
-   ![Paste Tool 2](../Screenshots/Exercise-04/ex04-task01-step05.png)
-
 6. Verify the final structure of the bottom of `mcp.ts` looks like this — the two new blocks sit between the last existing tool and `return server;`:
 
    ```
@@ -203,7 +198,7 @@ You will add two new `server.registerTool(...)` blocks to this file. You will no
    return server;   // this line must remain last
    ```
 
-   ![Verify file structure](../Screenshots/Exercise-04/ex04-task01-step06.png)
+   ![Verify file structure](../Screenshot/assets/lab04/task1.6.png)
 
 7. Save the file with **Ctrl+S**.
 
@@ -235,7 +230,7 @@ The code change only exists locally. To make the new tools available to all MCP 
 
    You will see the packaging and upload progress in the terminal. This typically takes 1–2 minutes.
 
-   ![azd deploy burger-mcp](../Screenshots/Exercise-04/ex04-task02-step02.png)
+   ![azd deploy burger-mcp](../Screenshot/assets/lab04/task2.2.png)
 
 3. Once deployment is complete, restart the Burger MCP Function App to ensure the new code is picked up cleanly:
 
