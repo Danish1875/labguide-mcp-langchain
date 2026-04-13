@@ -376,7 +376,6 @@ In this exercise, you:
 
 Over the course of this lab, you have:
 
-- **Provisioned a full serverless AI agent architecture on Azure** — Functions, Static Web Apps, Cosmos DB, Storage, and Application Insights — using a single `azd up` command
 - **Configured Azure OpenAI** as the reasoning engine and learned why endpoint format and API version matter
 - **Seeded a live Cosmos DB database** using GenAIScript and validated the agent responds with real data
 - **Explored the Model Context Protocol** end-to-end — from the raw tool definitions in code, to calling them via the MCP Inspector, to watching the LangChain.js agent chain multiple tools together automatically
