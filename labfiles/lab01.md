@@ -1,14 +1,14 @@
-# Exercise 01: Provision Azure OpenAI and Deploy the MCP Agent Infrastructure
+# Exercise 01: Provision Azure OpenAI and Connect the MCP Agent Infrastructure
 
 ### Estimated Duration: 1 Hour 30 Minutes
 
 ## Exercise Overview
 
-Before any AI agent can reason, plan, or call tools, it needs three things: a language model to think with, infrastructure to run on, and services wired together correctly. In this exercise, you will set all three up from scratch.
+Your lab environment already has the full Contoso Burgers application infrastructure deployed and waiting for you — all **five Azure services** are live in your resource group, wired together, and ready to run. The only missing piece is **your Azure OpenAI credentials**, which connect the AI Agent to its language model brain.
 
-You will start by deploying an **Azure OpenAI resource** and model from the Azure Portal — this is the LLM brain that powers the Contoso Burgers agent. You will then clone the application repository into Azure Cloud Shell, configure your deployment environment using the Azure Developer CLI (`azd`), and deploy the entire multi-service application to your Azure resource group in a single command.
+In this exercise, you will deploy an **Azure OpenAI resource and model** from the Azure Portal, then clone the application repository to your local machine, configure a `.env` file with your credentials and the pre-provisioned service URLs, install dependencies, and deploy the application code to all five services using the Azure Developer CLI.
 
-By the end of this exercise, five live Azure services will be running in your resource group, all wired together and ready for configuration — the Agent Web App, Agent API, Burger MCP Server, Burger API, and Burger Web App.
+By the end of this exercise, the full Contoso Burgers stack will be operational — Agent Web App, Agent API, Burger MCP Server, Burger API, and Burger Web App — all serving live traffic.
 
 ## Exercise Objectives
 
@@ -16,7 +16,6 @@ In this exercise, you will complete the following tasks:
 
 - **Task 1:** Deploy an Azure OpenAI Resource and Model
 - **Task 2:** Clone the Repository and Configure the Deployment Environment
-- **Task 3:** Deploy the Full Application Stack with `azd up`
 
 ---
 
@@ -38,17 +37,17 @@ The agent in this exercise uses Azure OpenAI to perform all its reasoning — un
 
 3. On the **Create Azure OpenAI** blade, fill in the following details, then click **Next** three times to reach the **Review + submit** tab:
 
-   | Setting | Value |
-   |---|---|
-   | **Subscription** | Your lab subscription |
-   | **Resource group** | <inject key="ResourceGroupName"></inject> |
-   | **Region** | **East US 2** |
-   | **Name** | **openai-mcp-<inject key="DeploymentID" enableCopy="false"></inject>** |
-   | **Pricing tier** | **Standard S0** |
+   | Setting            | Value                                                                  |
+   | ------------------ | ---------------------------------------------------------------------- |
+   | **Subscription**   | Your lab subscription                                                  |
+   | **Resource group** | <inject key="ResourceGroupName"></inject>                              |
+   | **Region**         | **East US 2**                                                          |
+   | **Name**           | **openai-mcp-<inject key="DeploymentID" enableCopy="false"></inject>** |
+   | **Pricing tier**   | **Standard S0**                                                        |
 
    ![Configure Azure OpenAI resource](../Screenshot/assets/lab01/lab01_task1.3.png)
 
-   > **Why this resource group?** Your lab environment has a single pre-provisioned resource group. All resources in this lab must be created inside it so that the Bicep deployment and role assignments work correctly.
+   > **Why this resource group?** Your lab environment has a single pre-provisioned resource group. All resources in this lab must be created inside it so that role assignments and service connections work correctly.
 
 4. On the **Review + submit** tab, click **Create** and wait for the deployment to complete. This typically takes 1–2 minutes.
 
@@ -69,8 +68,7 @@ The agent in this exercise uses Azure OpenAI to perform all its reasoning — un
    ![Deploy model](../Screenshot/assets/lab01/lab01_task1.8.png)
 
 9. Search for and select the model you wish to use. The lab is compatible with any of the following — pick based on what's available in your region:
-
-   - `o4-mini` *(recommended — fast and cost-effective)*
+   - `o4-mini` _(recommended — fast and cost-effective)_
    - `gpt-5.2-chat`
    - `gpt-5.4-mini`
 
@@ -78,18 +76,17 @@ The agent in this exercise uses Azure OpenAI to perform all its reasoning — un
 
 10. In the deployment configuration, set the following and click **Deploy**:
 
-    | Setting | Value |
-    |---|---|
-    | **Deployment name** | Give it a clear name, e.g. `gpt-5.4-mini` or your model name |
-    | **Deployment type** | Standard |
-    | **Tokens per Minute Rate Limit** | 10K (or higher if available) |
+    | Setting                          | Value                                                        |
+    | -------------------------------- | ------------------------------------------------------------ |
+    | **Deployment name**              | Give it a clear name, e.g. `gpt-5.4-mini` or your model name |
+    | **Deployment type**              | Standard                                                     |
+    | **Tokens per Minute Rate Limit** | 10K (or higher if available)                                 |
 
     ![Configure model deployment](../Screenshot/assets/lab01/lab01_task1.10.png)
 
     > **Note the deployment name exactly as you typed it** — this is what you will pass as `AZURE_OPENAI_MODEL` later. It is case-sensitive.
 
 11. Once the deployment succeeds, note the deployment name and add it to your text editor alongside your Key and Endpoint. You should now have three values saved:
-
     - **Endpoint** → e.g. `https://openai-mcp-XXXXXX.openai.azure.com/`
     - **Key 1** → a 32-character alphanumeric string
     - **Deployment name** → e.g. `gpt-5.4-mini`
@@ -104,11 +101,24 @@ The agent in this exercise uses Azure OpenAI to perform all its reasoning — un
 
 ## Task 2: Clone the Repository and Configure the Deployment Environment
 
-With your OpenAI credentials ready, the next step is to get the application code and configure the Azure Developer CLI (`azd`) environment. `azd` is Microsoft's open-source tool that handles both infrastructure provisioning (via Bicep) and application code deployment — all from a single command.
+Your resource group already contains all the Azure infrastructure — Function Apps, Cosmos DB, Storage, Static Web Apps, and Application Insights — provisioned and wired together. What they are missing is the **application code**, which needs to be deployed once from your local machine.
 
-In this task, you will open Azure Cloud Shell, clone the Contoso Burgers repository, install dependencies, and set all the required environment variables so `azd` knows exactly what to deploy and where.
+![Resource group overview](../Screenshot/assets/lab01/task3.6.png)
 
-> **What is `azd`?** The Azure Developer CLI (`azd`) bridges the gap between your code and Azure. It reads the `azure.yaml` file in the project root to understand which services exist, and the `infra/main.bicep` file to know what infrastructure to create. When you run `azd up`, it provisions the infrastructure and deploys all services in one go.
+| Resource                                  | Purpose                                                     |
+| ----------------------------------------- | ----------------------------------------------------------- |
+| 3× Azure Function Apps (Flex Consumption) | Agent API, Burger API, Burger MCP Server                    |
+| 3× App Service Plans (FC1)                | Compute plans for each Function App                         |
+| 2× Azure Static Web Apps                  | Agent Web App (chat UI) + Burger Web App (orders dashboard) |
+| 1× Azure Cosmos DB (Serverless, NoSQL)    | Stores burgers, orders, users, and chat history             |
+| 1× Azure Storage Account                  | Function deployment packages + burger images                |
+| 1× Application Insights + Log Analytics   | Telemetry and monitoring                                    |
+
+   > Take a moment to click through each resource. Notice that the three Function Apps are all on the **Flex Consumption** plan — this is Azure's newest serverless compute tier that scales to zero when idle, meaning you only pay when the functions actually execute.
+
+In this task, you will clone the repository, install dependencies, collect the pre-provisioned service URLs from the Azure Portal, build a `.env` file, and then use `azd` to deploy just the application code (skipping infrastructure provisioning entirely since it is already done).
+
+> **Why `azd deploy` and not `azd up`?** `azd up` provisions infrastructure _and_ deploys code. Since your infrastructure is already live, you only need `azd deploy` — which packages and uploads the application code for each service without touching the Azure resources.
 
 ### Steps
 
@@ -132,6 +142,7 @@ In this task, you will open Azure Cloud Shell, clone the Contoso Burgers reposit
    ```bash
    git clone https://github.com/Danish1875/mcp-agent-langchainjs.git
    ```
+
 4. Navigate into the project folder and open it in **Visual Studio Code**:
 
    ```bash
@@ -139,7 +150,7 @@ In this task, you will open Azure Cloud Shell, clone the Contoso Burgers reposit
    code .
    ```
 
-   This opens the entire project workspace in VS Code so you can run the remaining commands from the integrated terminal and easily explore the project files.
+   All remaining steps in this task are run from the **VS Code integrated terminal**. You can open a new terminal with **Ctrl+`** or via the menu **Terminal → New Terminal**.
 
    ![Open in VS Code](../Screenshot/assets/lab01/task2.4.png)
 
@@ -154,182 +165,153 @@ In this task, you will open Azure Cloud Shell, clone the Contoso Burgers reposit
 
    > **Why one install?** The `package.json` at the root defines a `workspaces` array pointing to all packages under `packages/`. npm resolves and installs all dependencies for every service in one pass — no need to `cd` into each folder individually.
 
+6. Before creating the `.env` file, you need to gather the URLs and endpoint values from the resources already deployed in your resource group. All of these are visible in the Azure Portal.
 
-6. Use `azd auth login` to log in to your Azure account, then create a new `azd` environment. This creates a named configuration store (under `.azure/`) that holds all your deployment variables:
+   > In the **Azure Portal**, navigate to your resource group **<inject key="ResourceGroupName"></inject>**. You will see all the pre-provisioned resources listed — Function Apps, Static Web Apps, Cosmos DB, Storage Account, and Application Insights.
 
-   ```bash
-   azd auth login
-   azd env new mcp-burger-dev
+7. Collect the following values and add them to your text editor alongside your OpenAI credentials. The table below tells you exactly where to find each one:
+
+   | Value needed                      | Where to find it in the Portal                                                                          |
+   | --------------------------------- | ------------------------------------------------------------------------------------------------------- |
+   | **BURGER_API_URL**                | Click `func-burger-api-...` → **Overview** → copy **Default domain**, prepend `https://`                |
+   | **AGENT_API_URL**                 | Click `func-agent-api-...` → **Overview** → copy **Default domain**, prepend `https://`                 |
+   | **BURGER_MCP_URL**                | Click `func-burger-mcp-...` → **Overview** → copy **Default domain**, prepend `https://`, append `/mcp` |
+   | **BURGER_WEBAPP_URL**             | Click `burger-webapp` (Static Web App) → **Overview** → copy **URL**                                    |
+   | **AGENT_WEBAPP_URL**              | Click `agent-webapp` (Static Web App) → **Overview** → copy **URL**                                     |
+   | **AZURE_COSMOSDB_NOSQL_ENDPOINT** | Click `cosmos-...` → **Overview** → copy **URI**                                                        |
+   | **AZURE_STORAGE_URL**             | Click `st...` (Storage Account) → **Endpoints** → copy **Blob service** URL (without trailing slash)    |
+
+   > **Tip:** Use the search bar at the top of the resource group blade to filter by resource type if the list is long.
+
+8. Also collect the following two values you will need for `azd` configuration:
+   - **Subscription ID** — visible in the Portal top bar or under **Subscriptions**
+   - **Your Principal ID** — run this in the VS Code terminal:
+
+   ```powershell
+   az login
+   az ad signed-in-user show --query id -o tsv
    ```
 
-   When prompted for an environment name, it is pre-filled from the command. Press **Enter** to confirm.
+   Copy the GUID printed to the terminal. This is your Azure AD principal ID, which `azd` uses to assign permissions to the deployed resources.
 
-7. Now set the required environment variables. These tell `azd` which Azure subscription and resource group to deploy into, and provide your OpenAI credentials. Run each command, replacing the placeholder values with your own:
+9. In VS Code, create a new file named **`.env`** in the **root of the project** (the same level as `package.json` and `azure.yaml`).
 
-   ```bash
-   azd env set AZURE_SUBSCRIPTION_ID "<your-subscription-id>"
-   ```
-   ```bash
-   azd env set AZURE_RESOURCE_GROUP "<inject key="ResourceGroupName"></inject>"
-   ```
-   ```bash
-   azd env set AZURE_LOCATION "eastus2"
-   ```
-   ```bash
-   azd env set AZURE_OPENAI_API_ENDPOINT "<your-openai-endpoint>"
-   ```
-   ```bash
-   azd env set AZURE_OPENAI_API_KEY "<your-openai-key>"
-   ```
-   ```bash
-   azd env set AZURE_OPENAI_MODEL "<your-deployment-name>"
-   ```
-   ```bash
-   azd env set OPENAI_API_VERSION "2025-04-01-preview"
-   ```
+   > **Important:** The `.env` file is already listed in `.gitignore`. It will never be committed to source control — it is local only.
 
-   > **Endpoint format matters.** Your endpoint must follow this exact pattern — ending with `.openai.azure.com/deployments/<model-name>` and nothing more:
-   > ```
-   > https://xxxx.openai.azure.com/openai/deployments/<model-name>
-   > ```
-   > Do **not** include `?api-version=...` — the application constructs the full URL internally. An incorrectly formatted endpoint is the most common cause of `404 Model Not Found` errors.
+10. Paste the following template into `.env` and fill in every value using what you collected above:
 
+    ```env
+    # Azure location and tenant (leave these as-is for the lab)
+    AZURE_LOCATION=eastus2
+    AZURE_ENV_NAME=mcp-burger-dev
 
-8. Retrieve your Azure Principal ID and set it as well — this is required so the Bicep deployment can assign the correct Cosmos DB and Storage roles to your user:
+    # Your Azure subscription and principal
+    AZURE_SUBSCRIPTION_ID=<your-subscription-id>
+    AZURE_PRINCIPAL_ID=<your-principal-id>
 
-   ```bash
-   az ad signed-in-user show --query id -o tsv 
-   azd env set AZURE_PRINCIPAL_ID "<your-principal-id>"
-   ```
-   ![Set environment variables](../Screenshot/assets/lab01/task2.7.png)
+    # Azure OpenAI — from Task 1
+    AZURE_OPENAI_API_ENDPOINT=https://<your-resource-name>.openai.azure.com/openai/deployments/<your-deployment-name>
+    AZURE_OPENAI_API_KEY=<your-key-1>
+    AZURE_OPENAI_MODEL=<your-deployment-name>
+    OPENAI_API_VERSION=2025-01-01-preview
 
-9. Verify all your variables are set correctly:
+    # Pre-provisioned service URLs — from above
+    BURGER_API_URL=https://func-burger-api-<token>.azurewebsites.net
+    AGENT_API_URL=https://func-agent-api-<token>.azurewebsites.net
+    BURGER_MCP_URL=https://func-burger-mcp-<token>.azurewebsites.net/mcp
+    BURGER_WEBAPP_URL=https://<burger-webapp>.azurestaticapps.net
+    AGENT_WEBAPP_URL=https://<agent-webapp>.azurestaticapps.net
 
-    ```bash
+    # Cosmos DB and Storage — from above
+    AZURE_COSMOSDB_NOSQL_ENDPOINT=https://cosmos-<token>.documents.azure.com:443/
+    AZURE_STORAGE_URL=https://st<token>.blob.core.windows.net
+    AZURE_STORAGE_CONTAINER_NAME=blobs
+    ```
+
+    > **Endpoint format matters.** Your `AZURE_OPENAI_API_ENDPOINT` must follow this exact pattern — include `/openai/deployments/<your-deployment-name>` and nothing else after it. Do **not** add `?api-version=...`. An incorrectly formatted endpoint is the most common cause of `404 Model Not Found` errors.
+
+    Once filled in, your `.env` file should have no `<placeholder>` values remaining.
+
+11. Log in to Azure and create a new `azd` environment. This tells `azd` where to deploy:
+
+    ```powershell
+    azd auth login
+    azd env new mcp-burger-dev
+    ```
+
+12. Load all your `.env` values into the `azd` environment so it knows the target subscription, resource group, and credentials. Run each command, substituting your own values:
+
+    ```powershell
+    azd env set AZURE_SUBSCRIPTION_ID "<your-subscription-id>"
+    azd env set AZURE_RESOURCE_GROUP "<inject key="ResourceGroupName"></inject>"
+    azd env set AZURE_LOCATION "eastus2"
+    azd env set AZURE_OPENAI_API_ENDPOINT "<your-openai-endpoint-with-deployment-path>"
+    azd env set AZURE_OPENAI_API_KEY "<your-key-1>"
+    azd env set AZURE_OPENAI_MODEL "<your-deployment-name>"
+    azd env set OPENAI_API_VERSION "2025-01-01-preview"
+    azd env set AZURE_PRINCIPAL_ID "<your-principal-id>"
+    ```
+
+    > **Why set values in both `.env` and `azd env`?** The `.env` file is read by local tools in Exercise 02 (such as GenAIScript for seeding data). The `azd env` store is read by `azd deploy` when it packages and uploads code to Azure. Both need to be populated.
+
+13. Confirm all variables are set:
+
+    ```powershell
     azd env get-values
     ```
 
-    You should see all the variables you just set printed to the terminal. Confirm that `AZURE_OPENAI_API_ENDPOINT`, `AZURE_OPENAI_MODEL`, and `AZURE_RESOURCE_GROUP` are present and correctly formatted.
+    Verify that `AZURE_OPENAI_API_ENDPOINT`, `AZURE_OPENAI_MODEL`, and `AZURE_RESOURCE_GROUP` are present and correctly formatted.
 
-<validation step="validate-azd-env-configured" />
+14. Now deploy the application code to all five pre-provisioned services:
 
-> **Congratulations** on completing Task 2! Your environment is fully configured. In the next task, you will trigger the deployment.
+    ```powershell
+    azd deploy
+    ```
 
----
+    Because the infrastructure is already provisioned, `azd deploy` skips resource creation entirely and goes straight to packaging and uploading code. You will see output like this:
 
-## Task 3: Deploy the Full Application Stack with `azd up`
+    ```
+    (✓) Done: Deploying service agent-api
+    (✓) Done: Deploying service agent-webapp
+    (✓) Done: Deploying service burger-api
+    (✓) Done: Deploying service burger-mcp
+    (✓) Done: Deploying service burger-webapp
+    ```
 
-With your environment configured, you are ready to deploy. A single `azd up` command will do two things sequentially: **provision** all Azure infrastructure defined in `infra/main.bicep`, and then **deploy** the compiled application code for all five services.
+    > This typically takes **5–8 minutes**. All five services are deployed in parallel where possible.
 
-Understanding what the Bicep template creates helps you know what you're working with after deployment. The `main.bicep` file is scoped to your resource group (not the subscription), meaning it will only create resources inside the group you specified — nothing outside it. Here is what gets provisioned:
+    ![Deployment output](../Screenshot/assets/lab01/task3.3.png)
 
-| Resource | Purpose |
-|---|---|
-| 3× Azure Function Apps (Flex Consumption) | Agent API, Burger API, Burger MCP Server |
-| 3× App Service Plans (FC1) | Compute plans for each Function App |
-| 2× Azure Static Web Apps | Agent Web App (chat UI) + Burger Web App (orders dashboard) |
-| 1× Azure Cosmos DB (Serverless, NoSQL) | Stores burgers, orders, users, and chat history |
-| 1× Azure Storage Account | Function deployment packages + burger images |
-| 1× Application Insights + Log Analytics | Telemetry and monitoring |
+15. To verify the deployment, navigate back to the **Azure Portal** and open your resource group. Click on the **`func-agent-api-...`** Function App, then go to **Settings** → **Environment variables**. Confirm that `AZURE_OPENAI_API_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_MODEL`, and `BURGER_MCP_URL` are all present with your values.
 
-> **No Azure AI Foundry provisioned here.** Because you already created your Azure OpenAI resource manually in Task 1, the Bicep template skips AI resource provisioning entirely and uses the endpoint and key you provided via `azd env set`. This keeps your deployment scoped to your resource group without needing subscription-level permissions.
+    ![Agent API app settings](../Screenshot/assets/lab01/task3.7.png)
 
-### Steps
+    > **Why check this?** When `azd deploy` runs, it re-applies the app settings from your `azd` environment to the Function App. If any are missing or malformed here, the agent will fail to connect to OpenAI at runtime.
 
-1. From the project root in Cloud Shell, run:
+16. Open your **Agent Web App URL** in a browser (from your `.env` file — `AGENT_WEBAPP_URL`). You should see the **Contoso Burgers AI Agent** login page. Sign in with your Microsoft or GitHub account.
 
-   ```bash
-   azd up
-   ```
+    ![Agent Web App login](../Screenshot/assets/lab01/task3.8.png)
 
-   When prompted to confirm the subscription and location, verify they match your lab settings and press **Enter**.
+    > **Try sending a message:** _"What burgers do you have?"_
 
-2. The deployment will proceed in two phases. First, **provisioning** creates all Azure resources. Watch the output — you will see each resource appear as it's created:
+    **Expected behavior at this stage:** The chat interface will load and accept messages, but the agent will return no results or an empty response. This is completely normal — the Cosmos DB database exists and is empty. You will populate it in Exercise 02.
 
-   ```
-   (✓) Done: App Service plan: plan-burger-api-...
-   (✓) Done: Storage account: st...
-   (✓) Done: Function App: func-burger-api-...
-   (✓) Done: Azure Cosmos DB: cosmos-...
-   ```
-
-   This phase typically takes **8–15 minutes**. The Cosmos DB creation is the longest step.
-
-
-3. After provisioning, the **deployment** phase begins automatically — `azd` packages and uploads the code for each service:
-
-   ```
-   (✓) Done: Deploying service agent-api
-   (✓) Done: Deploying service agent-webapp
-   (✓) Done: Deploying service burger-api
-   (✓) Done: Deploying service burger-mcp
-   (✓) Done: Deploying service burger-webapp
-   ```
-
-   ![Deployment output](../Screenshot/assets/lab01/task3.3.png)
-
-4. Once complete, the terminal will show `SUCCESS` and print the endpoint URL for each service. Copy these to your text editor — you will use them throughout the rest of the lab:
-
-   ```
-   - Endpoint: https://func-agent-api-XXXX.azurewebsites.net/
-   - Endpoint: https://<agent-webapp>.azurestaticapps.net/
-   - Endpoint: https://func-burger-api-XXXX.azurewebsites.net/
-   - Endpoint: https://func-burger-mcp-XXXX.azurewebsites.net/
-   - Endpoint: https://<burger-webapp>.azurestaticapps.net/
-   ```
-
-5. Pull all deployed environment values into a local `.env` file. This file is used by local tools later in the lab (such as GenAIScript for seeding burger data):
-
-   ```bash
-   azd env get-values > .env
-   ```
-
-   Then verify the file was created using the powershell command:
-
-   ```powershell
-   Get-Content .env
-   ```
-
-   You should see all your service URLs, the Cosmos DB endpoint, storage URL, and OpenAI settings printed out.
-
-
-6. Navigate to the **Azure Portal** and open your resource group **<inject key="ResourceGroupName"></inject>**. You should see all the newly provisioned resources listed there — Function Apps, Static Web Apps, Cosmos DB, Storage Account, and Application Insights.
-
-   ![Resource group overview](../Screenshot/assets/lab01/task3.6.png)
-
-   > Take a moment to click through each resource. Notice that the three Function Apps are all on the **Flex Consumption** plan — this is Azure's newest serverless compute tier that scales to zero when idle, meaning you only pay when the functions actually execute.
-
-7. Click on the **func-agent-api-XXXX** Function App, navigate to **Settings** → **Environment variables**, and confirm that `AZURE_OPENAI_API_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_MODEL`, and `BURGER_MCP_URL` are all present with your values.
-
-   ![Agent API app settings](../Screenshot/assets/lab01/task3.7.png)
-
-   > **Why check this?** The Bicep template injects these values directly into the Function App's application settings during deployment. When the Node.js code runs on Azure, it reads them via `process.env`. If any are missing or malformed, the agent will fail to connect to OpenAI — which you will diagnose in Exercise 02 on the next page.
-
-8. Go back to your resource group and open the **Agent Web App** resource, then open your **Agent Web App URL** in a browser.
-
-   ![Agent Web App login](../Screenshot/assets/lab01/task3.8.png)
-   You should see the **Contoso Burgers AI Agent** login page. Sign in with your Microsoft/Github account.
-   > **Try sending a message:** *"What burgers do you have?"*
-   
-    **Expected behavior at this stage:** The chat interface will load and accept messages, but the agent will likely return no results or an empty response. This is normal — the Cosmos DB database is empty and has no burger data yet. You will fix this in Exercise 02.
-
-   ![Empty chat response](../Screenshot/assets/lab01/task3.8.1.png)
+    ![Empty chat response](../Screenshot/assets/lab01/task3.8.1.png)
 
 <validation step="validate-full-deployment" />
-
-> **Congratulations** on completing Exercise 01! All five services are now live in Azure. Your infrastructure is provisioned, your code is deployed, and your Azure OpenAI credentials are wired in. In Exercise 02, you will seed the database with burger menu data and verify the full end-to-end agent flow.
-
+ 
+>**Congratulations** on completing Exercise 01! All five services are now running your application code. Your Azure OpenAI credentials are wired in, all services can communicate with each other, and Cosmos DB is ready to receive data. In Exercise 02, you will seed the burger menu and verify the full end-to-end agent flow.
 ---
 
 ## Summary
 
 In this exercise, you:
 
-- Deployed an **Azure OpenAI resource** and model from the Azure Portal and saved your API credentials
+- Deployed an **Azure OpenAI resource** and model from the Azure Portal and saved your endpoint, key, and deployment name
 - Cloned the Contoso Burgers repository and installed all dependencies using npm workspaces
-- Configured the `azd` environment with your subscription, resource group, and OpenAI credentials
-- Ran `azd up` to provision all Azure infrastructure via Bicep and deploy all five application services
-- Verified the deployed resources in the Azure Portal and confirmed the Agent API received the correct environment variables
+- Collected pre-provisioned service URLs from the Azure Portal and built a `.env` file at the project root
+- Configured the `azd` environment and ran `azd deploy` to push application code to all five pre-provisioned services
+- Verified the Agent API received the correct environment variables and confirmed the Agent Web App loads successfully
 
 Click **Next** to proceed to Exercise 02, where you will seed the database and get the agent fully operational.
 
