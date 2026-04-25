@@ -1,4 +1,4 @@
-# 🍔 Serverless AI Agent Lab (Azure)
+# 🍔 MCP Serverless AI Agent Lab (Azure)
 
 ## 📌 Overview
 This lab walks you through building and deploying a **serverless AI agent** on Azure. The solution uses a language model to understand user requests and dynamically interact with backend services through structured tools, demonstrating a real-world, production-style architecture.
